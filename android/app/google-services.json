@@ -1,0 +1,55 @@
+{
+  "project_info": {
+    "project_number": "808867989205",
+    "firebase_url": "https://audioonline-3fe06.firebaseio.com",
+    "project_id": "audioonline-3fe06",
+    "storage_bucket": "audioonline-3fe06.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:808867989205:android:68c6a64dc663e010",
+        "android_client_info": {
+          "package_name": "save.audio"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "808867989205-k2jboavs2ehfulaacfias17top509jgl.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "save.audio",
+            "certificate_hash": "26c43b49eab5fb8fe85ae54a2f682eca15e29127"
+          }
+        },
+        {
+          "client_id": "808867989205-3a20l95m3tgirn4m4assid5kidmn4hpc.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAHf1SekrX9Tym4ZcVav8xXF3_UtgbY7xg"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 2,
+          "other_platform_oauth_client": [
+            {
+              "client_id": "808867989205-3a20l95m3tgirn4m4assid5kidmn4hpc.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
