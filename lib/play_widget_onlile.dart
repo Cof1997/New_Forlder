@@ -10,7 +10,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 enum PlayerState { stopped, playing, paused }
 
 class PlayerWidgetOnline extends StatefulWidget {
-  final String url;
+  String url;
   String image, name;
   SharedPreferences prefs;
 
@@ -24,17 +24,20 @@ class _PlayerWidgetOnlineState extends State<PlayerWidgetOnline> {
   AudioPlayer _audioPlayer = new AudioPlayer();
   AudioPlayer advancedPlayer = new AudioPlayer();
   double volume = 0.2;
-  bool moreButton;
+  bool moreButton, isPlaying;
+  String path;
   Color color;
   int i = 0;
-  var _file, _saveName;
   SharedPreferences sharedPreferences;
 
   @override
   void initState() {
     super.initState();
     moreButton = false;
-    color = Colors.grey[300];
+    isPlaying = false;
+    _localPath.then((v) {
+      path = v;
+    });
     _loadCounter();
     sharedPreferences = widget.prefs;
   }
@@ -47,7 +50,6 @@ class _PlayerWidgetOnlineState extends State<PlayerWidgetOnline> {
 
   Future<String> get _localPath async {
     final directory = await getApplicationDocumentsDirectory();
-    print('locallllllllllllllllll$directory');
     return directory.path;
   }
 
@@ -56,25 +58,22 @@ class _PlayerWidgetOnlineState extends State<PlayerWidgetOnline> {
     setState(() {
       i = (sharedPreferences.getInt('counter') ?? 0);
     });
-    // listDownload();
   }
 
   _incrementCounter() async {
-    // SharedPreferences prefs = await SharedPreferences.getInstance();
     setState(() {
-      // i = (sharedPreferences.getInt('counter') ?? 0) ;
       sharedPreferences.setInt('counter', i);
-    }); //incre i when add a link
+    });
   }
 
   Future<File> get _localFile async {
     final path = await _localPath;
-    return File('$path/audio$i.mp3');
+    return File('$path/${widget.name}.mp3');
   }
 
   Future<File> _localFileName(int index) async {
     final path = await _localPath;
-    return File('$path/name$index.txt');
+    return File('$path/${widget.name}.txt');
   }
 
   Future _loadFile(String linkIn, String nameIn) async {
@@ -84,16 +83,12 @@ class _PlayerWidgetOnlineState extends State<PlayerWidgetOnline> {
     });
     final File fileAudio = await _localFile;
     final File fileName = await _localFileName(i);
-    
+
     _incrementCounter();
 
-    _file = await fileAudio.writeAsBytes(bytes);
-    // fileAudio.readAsString().then((v) {
-    // });
-    _saveName = await fileName.writeAsString(nameIn);
-    fileName.readAsString().then((v) {
-    });
-
+    await fileAudio.writeAsBytes(bytes);
+    await fileName.writeAsString(nameIn);
+    fileName.readAsString().then((v) {});
   }
 
   @override
@@ -103,43 +98,45 @@ class _PlayerWidgetOnlineState extends State<PlayerWidgetOnline> {
       child: Card(
           child: Column(
         children: <Widget>[
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: <Widget>[
-              Image.asset(
-                widget.image,
-                height: 100.0,
+          RaisedButton(
+              padding: EdgeInsets.only(right: 0.0, left: 0.0),
+              child: Container(
+                alignment: Alignment.center,
+                constraints: BoxConstraints.expand(height: 100.0),
+                decoration: BoxDecoration(
+                    image: DecorationImage(
+                        image: AssetImage(widget.image), fit: BoxFit.cover)),
+                child: Column(
+                  children: <Widget>[
+                    SizedBox(height: 20.0),
+                    Text(widget.name,
+                        style: new TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 40.0,
+                        )),
+                    isPlaying ? Text('playing') : SizedBox()
+                  ],
+                ),
               ),
-              Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: <Widget>[
-                  Container(
-                    child: Text(widget.name),
-                  ),
-                  RaisedButton(
-                      child: Text('Play'),
-                      onPressed: () {
-                        moreButton
-                            ? setState(() {
-                                moreButton = false;
-                              })
-                            : setState(() {
-                                moreButton = true;
-                              });
-                      }),
-                ],
-              ),
-            ],
-          ),
+              onPressed: () {
+                moreButton
+                    ? setState(() {
+                        moreButton = false;
+                      })
+                    : setState(() {
+                        moreButton = true;
+                      });
+              }),
           moreButton == false
               ? SizedBox(
                   height: 0.0,
                 )
               : Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
                     IconButton(
                       icon: Icon(Icons.play_arrow),
-                      onPressed: _play,
+                      onPressed: saveAndPlay,
                       iconSize: 35.0,
                       color: Colors.blue,
                     ),
@@ -157,23 +154,28 @@ class _PlayerWidgetOnlineState extends State<PlayerWidgetOnline> {
                     ),
                     setVolAd(advancedPlayer)
                   ],
-                ),
+                )
         ],
       )),
     );
   }
 
-  Future<int> _play() async {
-    print('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~playOnline:${widget.url}');
-    _loadFile(widget.url, widget.name);
-    final result = await _audioPlayer.play(widget.url);
-    if (result == 1)
-      setState(() {
-        _playerState = PlayerState.playing;
-        color = Colors.blue[300];
-      });
+  Future _play() async {
+    _audioPlayer.setReleaseMode(ReleaseMode.LOOP);
+    await _audioPlayer.play(widget.url,isLocal: true, volume: volume);
+    setState(() => isPlaying = true);
+  }
 
-    return result;
+  Future saveAndPlay() async {
+    Scaffold.of(context).showSnackBar(SnackBar(
+      content: Text('Downloading audio'),
+    ));
+    _loadFile(widget.url, widget.name).then((_) {
+      Scaffold.of(context)
+          .showSnackBar(SnackBar(content: Text('Download success')));
+      setState(() => widget.url = '$path/${widget.name}.mp3');
+      _play();
+    });
   }
 
   Future<int> _stop() async {
@@ -181,10 +183,9 @@ class _PlayerWidgetOnlineState extends State<PlayerWidgetOnline> {
     if (result == 1) {
       setState(() {
         _playerState = PlayerState.stopped;
-        color = Colors.grey[300];
+        isPlaying = false;
       });
     }
-    print('iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii~i~$i');
     return result;
   }
 
@@ -193,7 +194,7 @@ class _PlayerWidgetOnlineState extends State<PlayerWidgetOnline> {
     if (result == 1) {
       setState(() {
         _playerState = PlayerState.paused;
-        color = Colors.grey[300];
+        isPlaying = false;
       });
     }
     return result;
@@ -259,14 +260,14 @@ class _PlayerWidgetOnlineState extends State<PlayerWidgetOnline> {
 //     ],
 //   ),
 // );
-    // setState(() {
-    //   i++;
-    // });
-    // if (linkIn != null) {
-    //   print("aaaaaaaaaaaaaaaaaaIS FILE");
-    //   setState(() {
-    //     listAudio.add(linkIn);
-    //     listImage.add('images/noImage.png');
-    //     listName.add(nameIn);
-    //   });
-    // }
+// setState(() {
+//   i++;
+// });
+// if (linkIn != null) {
+//   print("aaaaaaaaaaaaaaaaaaIS FILE");
+//   setState(() {
+//     listAudio.add(linkIn);
+//     listImage.add('images/noImage.png');
+//     listName.add(nameIn);
+//   });
+// }

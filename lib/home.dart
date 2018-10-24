@@ -43,7 +43,7 @@ class _ExampleAppState extends State<ExampleApp> {
 
   String link, name;
   double volume = 0.2;
-  int i = 0;
+  int i = 0, lengDirect = 0;
   var fileLocal;
   DatabaseReference itemRef;
   Directory directory;
@@ -56,7 +56,6 @@ class _ExampleAppState extends State<ExampleApp> {
     setState(() {
       i = (prefs.getInt('counter') ?? 0);
     });
-    listDownload();
   }
 
   _onEntryAdded(Event event) {
@@ -65,26 +64,25 @@ class _ExampleAppState extends State<ExampleApp> {
     });
   }
 
-
-  Future<String> get _localPath async {
+  Future<Directory> get _localPath async {
     directory = await getApplicationDocumentsDirectory();
-    return directory.path;
+    return directory;
   }
 
-  Future<File> _localFileName(int index) async {
-    final path = await _localPath;
-    return File('$path/name$index.txt');
+  get _lengDic {
+    _localPath.then((d) {
+      d.list().length.then((l) {
+        listDownload(l);
+      });
+    });
+  }
+
+  Future<File> _localFileName(File f) async {
+    final file = File(f.path);
+    return file;
   }
 
   Future _loadFile(String linkIn, String nameIn) async {
-    // final bytes = await readBytes(linkIn);
-    // final File fileAudio = await _localFile;
-    // final File fileName = await _localFileName(i);
-    // i++;
-    // _file = await fileAudio.writeAsBytes(bytes);
-    // _saveName = await fileName.writeAsString(nameIn);
-    // _saveName = await fileName.readAsString().then((v) {
-    // });
     if (linkIn != null) {
       setState(() {
         listAudio.add(linkIn);
@@ -94,24 +92,33 @@ class _ExampleAppState extends State<ExampleApp> {
     }
   }
 
-  listDownload() async {
-    String name;
+  listDownload(int leng) async {
     File fileName;
-    for (int j = 1; j <= i; j++) {
-      await _localFileName(j).then((v) {
-        fileName = v;
+    int j = 0;
+    _localPath.then((dic) {
+      dic.list().forEach((p) async {
+        // if (j < leng) {
+          if (j > 2) {
+            if (j % 2 == 1) {
+              setState(() {
+                listAudio.add(p.path);
+                j++;
+              });
+            } else {
+              j++;
+              await _localFileName(p).then((v) => fileName = v);
+              await fileName.readAsString().then((name) {
+                setState(() {
+                  listImage.add('images/noImage.jpg');
+                  listName.add(name);
+                });
+              });
+            }
+          } else
+            j++;
+        // }
       });
-      await fileName.readAsString().then((v) {
-        name = v;
-      });
-      _localPath.then((String p) {
-        setState(() {
-          listAudio.add('$p/audio$j.mp3');
-          listImage.add('images/noImage.jpg');
-          listName.add(name);
-        });
-      });
-    }
+    });
   }
 
   @override
@@ -123,8 +130,8 @@ class _ExampleAppState extends State<ExampleApp> {
     final FirebaseDatabase database = FirebaseDatabase.instance;
     itemRef = database.reference().child('audio');
     itemRef.onChildAdded.listen(_onEntryAdded);
-    // itemRef.onChildChanged.listen(_onEntryChanged);
     addButton = false;
+    _lengDic;
   }
 
   @override
@@ -301,16 +308,24 @@ class _ExampleAppState extends State<ExampleApp> {
 //   }); //incre i when add a link
 // }
 
-  // _onEntryChanged(Event event) {
-  //   var old = items.singleWhere((entry) {
-  //     return entry.key == event.snapshot.key;
-  //   });
-  //   setState(() {
-  //     items[items.indexOf(old)] = Item.fromSnapshot(event.snapshot);
-  //   });
-  // }
-  
-  // Future<File> get _localFile async {
-  //   final path = await _localPath;
-  //   return File('$path/audio$i.mp3');
-  // }
+// _onEntryChanged(Event event) {
+//   var old = items.singleWhere((entry) {
+//     return entry.key == event.snapshot.key;
+//   });
+//   setState(() {
+//     items[items.indexOf(old)] = Item.fromSnapshot(event.snapshot);
+//   });
+// }
+
+// Future<File> get _localFile async {
+//   final path = await _localPath;
+//   return File('$path/audio$i.mp3');
+// }
+// final bytes = await readBytes(linkIn);//ben trong _loadfile
+// final File fileAudio = await _localFile;
+// final File fileName = await _localFileName(i);
+// i++;
+// _file = await fileAudio.writeAsBytes(bytes);
+// _saveName = await fileName.writeAsString(nameIn);
+// _saveName = await fileName.readAsString().then((v) {
+// });

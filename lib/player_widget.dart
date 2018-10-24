@@ -3,8 +3,7 @@ import 'dart:io';
 import 'package:audioplayers/audio_cache.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
-
-enum PlayerState { stopped, playing, paused }
+import 'package:path_provider/path_provider.dart';
 
 class PlayerWidget extends StatefulWidget {
   final String url;
@@ -19,10 +18,8 @@ class PlayerWidget extends StatefulWidget {
 class _PlayerWidgetState extends State<PlayerWidget> {
   AudioCache audioCache = new AudioCache();
   AudioPlayer advancedPlayer = new AudioPlayer();
-  AudioPlayer _audioPlayer = new AudioPlayer();
   AudioPlayer fixedPlayer = AudioPlayer();
   double volume = 0.2;
-  PlayerState _playerState = PlayerState.stopped;
   bool isAudioDown, isPlaying;
   bool moreButton;
 
@@ -30,8 +27,16 @@ class _PlayerWidgetState extends State<PlayerWidget> {
   void initState() {
     super.initState();
     moreButton = false;
-    widget.url.contains('/data')? isAudioDown = true: isAudioDown = false;
+    _localPath.then((p)=>widget.url.contains(p) ? isAudioDown = true : isAudioDown = false);
+    // widget.url.contains('/data') ? isAudioDown = true : isAudioDown = false;
     isPlaying = false;
+  }
+
+  Future<String> get _localPath async {
+    final directory = await getApplicationDocumentsDirectory();
+    // print('hjhjhjhjhjhjhjhjjhhjhjjjjj: ${directory.list().f)}');
+    directory.list().forEach((action){if(action is File){print('abcdef: ${action.path}');}});
+    return directory.path;
   }
 
   @override
@@ -48,19 +53,6 @@ class _PlayerWidgetState extends State<PlayerWidget> {
                 }),
           ),
         );
-
-    Widget setVolDown = Container(
-      child: Slider(
-        min: 0.0,
-        max: 1.0,
-        value: volume,
-        onChanged: (value) => setState(() {
-              volume = value;
-              _audioPlayer.setVolume(volume);
-              print(volume);
-            }),
-      ),
-    );
 
     return Container(
       padding: EdgeInsets.only(right: 10.0, left: 10.0),
@@ -83,7 +75,16 @@ class _PlayerWidgetState extends State<PlayerWidget> {
                           fontWeight: FontWeight.bold,
                           fontSize: 40.0,
                         )),
-                    isPlaying ? Text('playing') : SizedBox()
+                    isPlaying
+                        ? Container(
+                            child: Center(
+                              child: Text('playing',
+                                  style: TextStyle(fontSize: 20.0)),
+                            ),
+                            color: Colors.white30,
+                            width: 80.0,
+                          )
+                        : SizedBox()
                   ],
                 ),
               ),
@@ -115,23 +116,23 @@ class _PlayerWidgetState extends State<PlayerWidget> {
                   children: <Widget>[
                     IconButton(
                       icon: Icon(Icons.play_arrow),
-                      onPressed: isAudioDown ? _play : loop,
+                      onPressed: loop,
                       iconSize: 35.0,
                       color: Colors.blue,
                     ),
                     IconButton(
                       icon: Icon(Icons.pause),
-                      onPressed: isAudioDown ? _pause : pause,
+                      onPressed: pause,
                       iconSize: 35.0,
                       color: Colors.blue,
                     ),
                     IconButton(
                       icon: Icon(Icons.stop),
-                      onPressed: isAudioDown ? _stop : stop,
+                      onPressed: stop,
                       iconSize: 35.0,
                       color: Colors.blue,
                     ),
-                    isAudioDown ? setVolDown : setVolAd(advancedPlayer)
+                    setVolAd(advancedPlayer)
                   ],
                 )
         ],
@@ -140,11 +141,12 @@ class _PlayerWidgetState extends State<PlayerWidget> {
   }
 
   Future loop() async {
-    File file = await audioCache.load(widget.url);
-    AudioPlayer player = _player();
-    player.setReleaseMode(ReleaseMode.LOOP);
-    player.play(file.path, isLocal: true, volume: volume);
-    advancedPlayer = player;
+    var file;
+    isAudioDown
+        ? file = widget.url
+        : await audioCache.load(widget.url).then((f) => file = f.path);
+    advancedPlayer.setReleaseMode(ReleaseMode.LOOP);
+    advancedPlayer.play(file, isLocal: true, volume: volume);
     setState(() {
       isPlaying = true;
     });
@@ -163,36 +165,37 @@ class _PlayerWidgetState extends State<PlayerWidget> {
     setState(() => isPlaying = false);
   }
 
-  AudioPlayer _player() => fixedPlayer ?? new AudioPlayer();
+  // AudioPlayer _player() => fixedPlayer ?? new AudioPlayer();
 
-  Future _play() async {
-    final result = await _audioPlayer.play(widget.url, isLocal: true);
-    if (result == 1)
-      setState(() {
-        _playerState = PlayerState.playing;
-        isPlaying = true;
-      });
-  }
+  // Future _play() async {
+  //   final result = await _audioPlayer.play(widget.url, isLocal: false);
+  //   _audioPlayer.setReleaseMode(ReleaseMode.LOOP);
+  //   if (result == 1)
+  //     setState(() {
+  //       _playerState = PlayerState.playing;
+  //       isPlaying = true;
+  //     });
+  // }
 
-  Future _stop() async {
-    final result = await _audioPlayer.stop();
-    if (result == 1) {
-      setState(() {
-        _playerState = PlayerState.stopped;
-        isPlaying = false;
-      });
-    }
-  }
+  // Future _stop() async {
+  //   final result = await _audioPlayer.stop();
+  //   if (result == 1) {
+  //     setState(() {
+  //       _playerState = PlayerState.stopped;
+  //       isPlaying = false;
+  //     });
+  //   }
+  // }
 
-  Future _pause() async {
-    final result = await _audioPlayer.pause();
-    if (result == 1) {
-      setState(() {
-        _playerState = PlayerState.paused;
-        isPlaying = false;
-      });
-    }
-  }
+  // Future _pause() async {
+  //   final result = await _audioPlayer.pause();
+  //   if (result == 1) {
+  //     setState(() {
+  //       _playerState = PlayerState.paused;
+  //       isPlaying = false;
+  //     });
+  //   }
+  // }
 }
 
 // return Container(
@@ -276,3 +279,16 @@ class _PlayerWidgetState extends State<PlayerWidget> {
 //   tag: 'hero-tag',
 //   child: decoratedBox,
 // );
+    // Widget setVolDown = Container(
+    //   child: Slider(
+    //     min: 0.0,
+    //     max: 1.0,
+    //     value: volume,
+    //     onChanged: (value) => setState(() {
+    //           volume = value;
+    //           _audioPlayer.setVolume(volume);
+    //           print(volume);
+    //         }),
+    //   ),
+    // );
+// enum PlayerState { stopped, playing, paused }
