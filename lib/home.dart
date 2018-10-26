@@ -6,7 +6,6 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:test_sound/item.dart';
 import 'package:test_sound/play_widget_onlile.dart';
 
@@ -49,14 +48,6 @@ class _ExampleAppState extends State<ExampleApp> {
   Directory directory;
   List<List<int>> listSave;
   bool addButton;
-  SharedPreferences prefs;
-
-  _loadCounter() async {
-    prefs = await SharedPreferences.getInstance();
-    setState(() {
-      i = (prefs.getInt('counter') ?? 0);
-    });
-  }
 
   _onEntryAdded(Event event) {
     setState(() {
@@ -77,8 +68,8 @@ class _ExampleAppState extends State<ExampleApp> {
     });
   }
 
-  Future<File> _localFileName(File f) async {
-    final file = File(f.path);
+  Future<File> _localFileName(String f) async {
+    final file = File(f);
     return file;
   }
 
@@ -96,27 +87,54 @@ class _ExampleAppState extends State<ExampleApp> {
     File fileName;
     int j = 0;
     _localPath.then((dic) {
-      dic.list().forEach((p) async {
-        // if (j < leng) {
-          if (j > 2) {
-            if (j % 2 == 1) {
-              setState(() {
-                listAudio.add(p.path);
-                j++;
-              });
-            } else {
-              j++;
-              await _localFileName(p).then((v) => fileName = v);
-              await fileName.readAsString().then((name) {
-                setState(() {
-                  listImage.add('images/noImage.jpg');
-                  listName.add(name);
-                });
-              });
-            }
-          } else
-            j++;
-        // }
+      dic.list().forEach((p) {
+        // if (j > 2) {
+        //   if (j % 2 == 1) {
+        //     setState(() {
+        //       listAudio.add(p.path);
+        //       j++;
+        //     });
+        //   } else {
+        //     j++;
+        //     await _localFileName(p).then((v) => fileName = v);
+        //     await fileName.readAsString().then((name) {
+        //       setState(() {
+        //         listImage.add('images/noImage.jpg');
+        //         listName.add(name);
+        //       });
+        //     });
+        //   }
+        // } else
+        //   j++;
+        print('test: $p');
+        if (j > 2) {
+          if (p.path.contains(dic.path) && p.path.contains('.mp3')) {
+            setState(() {
+              listAudio.add(p.path);
+              print('test2: $p');
+            });
+          }
+        }
+        j++;
+      }).then((_) async {
+        for (int i = 6; i < listAudio.length; i++) {
+          int leng = listAudio[i].length;
+          String string = listAudio[i].substring(0, leng - 4);
+          print('aaaaaaaaaaaaaaaa$string');
+          print('aaaaaaaaaaaaaaaa${dic.path}');
+          // await _localFileName(string + '.txt').then((v) => fileName = v);
+          // await fileName.readAsString().then((name) {
+          //   setState(() {
+          //     listImage.add('images/noImage.jpg');
+          //     listName.add(name);
+          //   });
+          // });
+          print('aaaaaa2: ${string.substring(dic.path.length + 1)}');
+          setState(() {
+            listImage.add('images/noImage.jpg');
+            listName.add(string.substring(dic.path.length + 1));
+          });
+        }
       });
     });
   }
@@ -125,7 +143,6 @@ class _ExampleAppState extends State<ExampleApp> {
   void initState() {
     super.initState();
     _localPath;
-    _loadCounter();
     item = Item("", "");
     final FirebaseDatabase database = FirebaseDatabase.instance;
     itemRef = database.reference().child('audio');
@@ -173,7 +190,12 @@ class _ExampleAppState extends State<ExampleApp> {
                 padding: EdgeInsets.only(top: 15.0),
                 child: Text('Add'),
                 onPressed: () {
-                  _loadFile(link, name);
+                  // _loadFile(link, name);
+                  bool same = false;
+                  listName.forEach((e) {
+                    if (e == name) same = true;
+                  });
+                  same == false ? _loadFile(link, name) : print('that no no');
                   // _incrementCounter();
                 },
               )
@@ -191,7 +213,7 @@ class _ExampleAppState extends State<ExampleApp> {
                   url: listAudio[index],
                   image: listImage[index],
                   name: listName[index],
-                  prefs: prefs,
+                  // prefs: prefs,
                 )
               : PlayerWidget(
                   url: listAudio[index],
@@ -205,10 +227,11 @@ class _ExampleAppState extends State<ExampleApp> {
       delegate: SliverChildBuilderDelegate((BuildContext context, int index) {
         if (index < leng)
           return PlayerWidgetOnline(
-              url: items[index].link,
-              image: 'images/noImage.jpg',
-              name: items[index].name,
-              prefs: prefs);
+            url: items[index].link,
+            image: 'images/noImage.jpg',
+            name: items[index].name,
+            // prefs: prefs
+          );
       }),
     );
 
@@ -329,3 +352,9 @@ class _ExampleAppState extends State<ExampleApp> {
 // _saveName = await fileName.writeAsString(nameIn);
 // _saveName = await fileName.readAsString().then((v) {
 // });
+// _loadCounter() async {
+//   prefs = await SharedPreferences.getInstance();
+//   setState(() {
+//     i = (prefs.getInt('counter') ?? 0);
+//   });
+// }

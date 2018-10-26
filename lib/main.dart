@@ -2,16 +2,16 @@ import 'dart:async';
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'package:test_sound/edit_audio.dart';
+// import 'package:test_sound/edit_audio.dart';
 import 'home.dart';
 
 void main() {
-  var _routes = <String, WidgetBuilder>{
-    "/edit": (BuildContext context) =>
-    new EditAudio(),
-  };
+  // var _routes = <String, WidgetBuilder>{
+  //   "/edit": (BuildContext context) =>
+  //   new EditAudio(),
+  // };
   // runApp(new MaterialApp(home: new Scaffold(body: new AudioApp())));
-  runApp(new MaterialApp(home: ExampleApp(),routes: _routes,debugShowCheckedModeBanner: false,));
+  runApp(new MaterialApp(home: ExampleApp(),debugShowCheckedModeBanner: false,));
 }
 
 Future<Null> _configure() async {

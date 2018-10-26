@@ -22,21 +22,54 @@ class _PlayerWidgetState extends State<PlayerWidget> {
   double volume = 0.2;
   bool isAudioDown, isPlaying;
   bool moreButton;
+  Directory dic;
 
   @override
   void initState() {
     super.initState();
     moreButton = false;
-    _localPath.then((p)=>widget.url.contains(p) ? isAudioDown = true : isAudioDown = false);
-    // widget.url.contains('/data') ? isAudioDown = true : isAudioDown = false;
+    _localPath.then((p) =>
+        widget.url.contains(p) ? isAudioDown = true : isAudioDown = false);
     isPlaying = false;
   }
 
   Future<String> get _localPath async {
     final directory = await getApplicationDocumentsDirectory();
-    // print('hjhjhjhjhjhjhjhjjhhjhjjjjj: ${directory.list().f)}');
-    directory.list().forEach((action){if(action is File){print('abcdef: ${action.path}');}});
+    directory.list().forEach((action) => print('abcdef: $action'));
+    setState(() => dic = directory);
     return directory.path;
+  }
+
+  Future editDialog(BuildContext context) async{
+    String name;
+    await showDialog<String>(
+        context: context,
+        barrierDismissible: false,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: Text('Rename Audio'),
+            content: TextField(
+              onChanged: (String str) => name = str,
+              autofocus: true,
+              decoration: InputDecoration(labelText: 'Name'),
+            ),
+            actions: <Widget>[
+              FlatButton(
+                child: Text('Edit'),
+                onPressed: () {
+                  Navigator.pop(context);
+                },
+              ),
+              FlatButton(
+                child: Text('Cancel'),
+                onPressed: () {
+                  Navigator.pop(context);
+                },
+              )
+            ],
+          );
+        });
+    return name;
   }
 
   @override
@@ -59,54 +92,78 @@ class _PlayerWidgetState extends State<PlayerWidget> {
       child: Card(
           child: Column(
         children: <Widget>[
-          RaisedButton(
-              padding: EdgeInsets.only(right: 0.0, left: 0.0),
-              child: Container(
-                alignment: Alignment.center,
-                constraints: BoxConstraints.expand(height: 100.0),
-                decoration: BoxDecoration(
-                    image: DecorationImage(
-                        image: AssetImage(widget.image), fit: BoxFit.cover)),
-                child: Column(
-                  children: <Widget>[
-                    SizedBox(height: 20.0),
-                    Text(widget.name,
-                        style: new TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 40.0,
-                        )),
-                    isPlaying
-                        ? Container(
-                            child: Center(
-                              child: Text('playing',
-                                  style: TextStyle(fontSize: 20.0)),
-                            ),
-                            color: Colors.white30,
-                            width: 80.0,
-                          )
-                        : SizedBox()
-                  ],
+          GestureDetector(
+            onDoubleTap: () {
+              print('kaka');
+              editDialog(context).then((a){
+                dic.list().forEach((action){
+                  if(action.path.contains(widget.name+'.txt')){
+                    action.rename(dic.path+'/'+a+'.txt');
+                  }
+                  if(action.path.contains(widget.name+'.mp3')){
+                    action.rename(dic.path+'/'+a+'.mp3');
+                  }
+                });
+                // print(dic.path+'/'+a+'.mp3');
+              });
+              dic.list().forEach((action) => print('abcdef: $action'));
+            },
+            onLongPress: () {
+              dic.list().forEach((action) {
+                if (action.path == widget.url)
+                  // print('haaaaaaaaaaaaa...you ...$action');
+                  // Scaffold.of(context)
+                  //   .showSnackBar(SnackBar(content: Text('Sắp có xóa rồi nha :)',style: TextStyle(fontSize: 20.0),)));
+                  action.delete();
+                if (action.path.contains(widget.name + '.txt')) {
+                  action.delete();
+                  Scaffold.of(context).showSnackBar(SnackBar(
+                      content: Text(
+                    'Xóa thành công ${widget.name}, khởi động lại app để hoàn tất',
+                    style: TextStyle(fontSize: 16.0),
+                  )));
+                }
+              });
+            },
+            child: RaisedButton(
+                padding: EdgeInsets.only(right: 0.0, left: 0.0),
+                child: Container(
+                  alignment: Alignment.center,
+                  constraints: BoxConstraints.expand(height: 100.0),
+                  decoration: BoxDecoration(
+                      image: DecorationImage(
+                          image: AssetImage(widget.image), fit: BoxFit.cover)),
+                  child: Column(
+                    children: <Widget>[
+                      SizedBox(height: 20.0),
+                      Text(widget.name,
+                          style: new TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 40.0,
+                          )),
+                      isPlaying
+                          ? Container(
+                              child: Center(
+                                child: Text('playing',
+                                    style: TextStyle(fontSize: 20.0)),
+                              ),
+                              color: Colors.white30,
+                              width: 80.0,
+                            )
+                          : SizedBox()
+                    ],
+                  ),
                 ),
-              ),
-              onPressed: () {
-                // Navigator.of(context)
-                //     .push(MaterialPageRoute(
-                //         builder: (_) => PlayAudio(
-                //               image: widget.image,
-                //               name: widget.name,
-                //               url: widget.url,
-                //             )))
-                //     .then((s) {
-                //   print('hjhjjjjjjjjjjjjjj$s');
-                // });
-                moreButton
-                    ? setState(() {
-                        moreButton = false;
-                      })
-                    : setState(() {
-                        moreButton = true;
-                      });
-              }),
+                onPressed: () {
+                  moreButton
+                      ? setState(() {
+                          moreButton = false;
+                        })
+                      : setState(() {
+                          moreButton = true;
+                        });
+                }),
+          ),
           moreButton == false
               ? SizedBox(
                   height: 0.0,
@@ -279,16 +336,16 @@ class _PlayerWidgetState extends State<PlayerWidget> {
 //   tag: 'hero-tag',
 //   child: decoratedBox,
 // );
-    // Widget setVolDown = Container(
-    //   child: Slider(
-    //     min: 0.0,
-    //     max: 1.0,
-    //     value: volume,
-    //     onChanged: (value) => setState(() {
-    //           volume = value;
-    //           _audioPlayer.setVolume(volume);
-    //           print(volume);
-    //         }),
-    //   ),
-    // );
+// Widget setVolDown = Container(
+//   child: Slider(
+//     min: 0.0,
+//     max: 1.0,
+//     value: volume,
+//     onChanged: (value) => setState(() {
+//           volume = value;
+//           _audioPlayer.setVolume(volume);
+//           print(volume);
+//         }),
+//   ),
+// );
 // enum PlayerState { stopped, playing, paused }

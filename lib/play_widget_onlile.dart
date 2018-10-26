@@ -5,22 +5,17 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-
-enum PlayerState { stopped, playing, paused }
 
 class PlayerWidgetOnline extends StatefulWidget {
   String url;
   String image, name;
-  SharedPreferences prefs;
 
-  PlayerWidgetOnline({this.url, this.image, this.name, this.prefs});
+  PlayerWidgetOnline({this.url, this.image, this.name});
   @override
   _PlayerWidgetOnlineState createState() => _PlayerWidgetOnlineState();
 }
 
 class _PlayerWidgetOnlineState extends State<PlayerWidgetOnline> {
-  PlayerState _playerState = PlayerState.stopped;
   AudioPlayer _audioPlayer = new AudioPlayer();
   AudioPlayer advancedPlayer = new AudioPlayer();
   double volume = 0.2;
@@ -28,7 +23,6 @@ class _PlayerWidgetOnlineState extends State<PlayerWidgetOnline> {
   String path;
   Color color;
   int i = 0;
-  SharedPreferences sharedPreferences;
 
   @override
   void initState() {
@@ -38,8 +32,6 @@ class _PlayerWidgetOnlineState extends State<PlayerWidgetOnline> {
     _localPath.then((v) {
       path = v;
     });
-    _loadCounter();
-    sharedPreferences = widget.prefs;
   }
 
   @override
@@ -51,19 +43,6 @@ class _PlayerWidgetOnlineState extends State<PlayerWidgetOnline> {
   Future<String> get _localPath async {
     final directory = await getApplicationDocumentsDirectory();
     return directory.path;
-  }
-
-  _loadCounter() async {
-    SharedPreferences sharedPreferences = await SharedPreferences.getInstance();
-    setState(() {
-      i = (sharedPreferences.getInt('counter') ?? 0);
-    });
-  }
-
-  _incrementCounter() async {
-    setState(() {
-      sharedPreferences.setInt('counter', i);
-    });
   }
 
   Future<File> get _localFile async {
@@ -83,8 +62,6 @@ class _PlayerWidgetOnlineState extends State<PlayerWidgetOnline> {
     });
     final File fileAudio = await _localFile;
     final File fileName = await _localFileName(i);
-
-    _incrementCounter();
 
     await fileAudio.writeAsBytes(bytes);
     await fileName.writeAsString(nameIn);
@@ -162,7 +139,7 @@ class _PlayerWidgetOnlineState extends State<PlayerWidgetOnline> {
 
   Future _play() async {
     _audioPlayer.setReleaseMode(ReleaseMode.LOOP);
-    await _audioPlayer.play(widget.url,isLocal: true, volume: volume);
+    await _audioPlayer.play(widget.url, isLocal: true, volume: volume);
     setState(() => isPlaying = true);
   }
 
@@ -181,10 +158,7 @@ class _PlayerWidgetOnlineState extends State<PlayerWidgetOnline> {
   Future<int> _stop() async {
     final result = await _audioPlayer.stop();
     if (result == 1) {
-      setState(() {
-        _playerState = PlayerState.stopped;
-        isPlaying = false;
-      });
+      setState(() => isPlaying = false);
     }
     return result;
   }
@@ -192,10 +166,7 @@ class _PlayerWidgetOnlineState extends State<PlayerWidgetOnline> {
   Future<int> _pause() async {
     final result = await _audioPlayer.pause();
     if (result == 1) {
-      setState(() {
-        _playerState = PlayerState.paused;
-        isPlaying = false;
-      });
+      setState(() => isPlaying = false);
     }
     return result;
   }
@@ -269,5 +240,17 @@ class _PlayerWidgetOnlineState extends State<PlayerWidgetOnline> {
 //     listAudio.add(linkIn);
 //     listImage.add('images/noImage.png');
 //     listName.add(nameIn);
+//   });
+// }
+// _loadCounter() async {
+//   SharedPreferences sharedPreferences = await SharedPreferences.getInstance();
+//   setState(() {
+//     i = (sharedPreferences.getInt('counter') ?? 0);
+//   });
+// }
+
+// _incrementCounter() async {
+//   setState(() {
+//     sharedPreferences.setInt('counter', i);
 //   });
 // }
